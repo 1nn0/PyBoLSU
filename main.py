@@ -15,6 +15,14 @@ if os.path.isfile("config.ini"):
     common_path = scripts_path + 'Common\\'
 else:
     print("Config not found!")
+    conf = ConfigParser()
+    conf['paths'] = {'bol' : os.getcwd()}
+    conf['scripts'] = {'Jinx' : 'https://raw.githubusercontent.com/RalphLeague/BoL/master/Jinx.lua'}
+    conf['common'] = {'SxOrbWalk.lua' : 'https://raw.githubusercontent.com/Superx321/BoL/master/common/SxOrbWalk.lua'}
+    with open("config.ini", w) as config_file:
+        conf.write(config_file)
+    print("Config file created. Check config.ini and edit it if necessary.")
+    input('Press enter to exit')
     exit()
 
 # Define User-Agent header, for compatibility with some servers
