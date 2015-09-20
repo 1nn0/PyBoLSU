@@ -5,10 +5,12 @@ from configparser import ConfigParser
 import shutil
 import os
 
+import workerpool
 import requests
 
 
 # Check if config is present
+# TODO: логика дубовая, всю эту функцию переработать надо.
 def check_config():
     if os.path.isfile("config.ini"):
         config = ConfigParser()
@@ -16,7 +18,10 @@ def check_config():
         bol_path = config.get('paths', 'bol', raw=True)
         scripts_path = bol_path + 'Scripts\\'
         common_path = scripts_path + 'Common\\'
+
     else:
+        # Very stupid config generation
+        # TODO Сделать нормальный генератор конфига, в зависимости от скриптов у пользователя.
         print("Config not found!")
         conf = ConfigParser()
         conf['paths'] = {'bol': os.getcwd()}
@@ -31,32 +36,48 @@ def check_config():
     return config, scripts_path, common_path
 
 
-# Download and compare remote files against local files
-def update(section, path):
-    # Define User-Agent header, for compatibility with some servers
-    user_agent = {'User-agent': 'Mozilla/5.0'}
+# Main logic of a job
+class Updater(workerpool.Job):
+    def __init__(self, script, url, path):
+        self.script = script
+        self.path = path
+        self.url = url
 
-    for option in config.options(section):
-        # Get file from URL to temp file.
-        req = requests.get(config.get(section, option, raw=True), headers=user_agent)
-        with open("tmp", "wb") as tmp:
+    def run(self):
+        # Define user-agent header. This is needed for compatibility with some servers
+        user_agent = {'User-agent': 'Mozilla/5.0'}
+        tmp_name = self.script
+        # Downloading file...
+        req = requests.get(self.url, headers=user_agent)
+        with open(tmp_name, "wb") as tmp:
             tmp.write(req.content)
-        tmp.close()
 
-        # Add .lua extension if not present.
-        if ".lua" not in option:
-            option = option + ".lua"
+        # TODO: работа с архивами (Evadee, DivinePrediction) лучше универсальную.
 
-        # Check and compare files in a simple if-else
-        if not os.path.isfile(path + option):
-            print("No file! Copying " + option)
-            shutil.copyfile("tmp", path + option)
-        elif cmp("tmp", path + option, shallow=False):
-            print("Files identical! " + option)
+        # ... checking if it exists and comparing with a downloaded one.
+        if not os.path.isfile(self.path + self.script):
+            print("No file! Copying " + self.script)
+            shutil.copyfile(tmp_name, self.path + self.script)
+        elif cmp(tmp_name, self.path + self.script, shallow=False):
+            print("Files identical! " + self.script)
         else:
-            print('Files differ! Copy newer file! ' + option)
-            shutil.copyfile("tmp", path + option)
-    return "Ok"
+            print('Files differ! Copy newer file! ' + self.script)
+            shutil.copyfile(tmp_name, self.path + self.script)
+
+        # cleaning
+        tmp.close()
+        os.remove(tmp_name)
+
+
+# I don't like it here.
+pool = workerpool.WorkerPool(size=5)
+
+
+# Get script name and URL from config and put a job in the pool
+def update(section, path):
+    for option in config.options(section):
+        work = Updater(option, config.get(section, option, raw=True), path)
+        pool.put(work)
 
 
 # Call all the functions!
@@ -64,9 +85,9 @@ config, scripts_path, common_path = check_config()
 update('scripts', scripts_path)
 update('common', common_path)
 
-
 # Cleanup and exit
 clear_cache()
-os.remove("tmp")
+pool.shutdown()
+pool.wait()
 print("All done!")
 input('Press enter to Exit')
