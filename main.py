@@ -39,7 +39,7 @@ def update(section, path):
     for option in config.options(section):
         # Get file from URL to temp file.
         req = requests.get(config.get(section, option, raw=True), headers=user_agent)
-        with open("tmp.lua", "wb") as tmp:
+        with open("tmp", "wb") as tmp:
             tmp.write(req.content)
         tmp.close()
 
@@ -50,12 +50,12 @@ def update(section, path):
         # Check and compare files in a simple if-else
         if not os.path.isfile(path + option):
             print("No file! Copying " + option)
-            shutil.copyfile("tmp.lua", path + option)
-        elif cmp("tmp.lua", path + option, shallow=False):
+            shutil.copyfile("tmp", path + option)
+        elif cmp("tmp", path + option, shallow=False):
             print("Files identical! " + option)
         else:
             print('Files differ! Copy newer file! ' + option)
-            shutil.copyfile("tmp.lua", path + option)
+            shutil.copyfile("tmp", path + option)
     return "Ok"
 
 
@@ -67,6 +67,6 @@ update('common', common_path)
 
 # Cleanup and exit
 clear_cache()
-os.remove("tmp.lua")
+os.remove("tmp")
 print("All done!")
 input('Press enter to Exit')
