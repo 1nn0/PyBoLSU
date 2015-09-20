@@ -35,7 +35,7 @@ for option in config.options('scripts'):
     elif cmp("tmp.lua", bolPath + option, shallow=False):
         print("Files identical! " + option)
     else:
-        print('Files differ! Copy newer file!')
+        print('Files differ! Copy newer file! ' + option)
         shutil.copyfile("tmp.lua", bolPath + option)
 
 #Cleanup and exit
