@@ -1,3 +1,5 @@
+#! python3
+
 from filecmp import cmp, clear_cache
 from configparser import ConfigParser
 import shutil
