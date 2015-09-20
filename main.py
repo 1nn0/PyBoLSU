@@ -2,6 +2,7 @@ from filecmp import cmp, clear_cache
 from configparser import ConfigParser
 import shutil
 import os
+
 import requests
 
 
@@ -55,7 +56,8 @@ def update(section, path):
             shutil.copyfile("tmp.lua", path + option)
     return "Ok"
 
-#Call all the functions!
+
+# Call all the functions!
 config, scripts_path, common_path = check_config()
 update('scripts', scripts_path)
 update('common', common_path)
