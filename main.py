@@ -12,6 +12,11 @@ import requests
 # Check if config is present
 # TODO: логика дубовая, всю эту функцию переработать надо.
 def check_config():
+
+    scripts_path = ""
+    common_path = ""
+
+
     if os.path.isfile("config.ini"):
         config = ConfigParser()
         config.read("config.ini")
@@ -26,14 +31,51 @@ def check_config():
         conf = ConfigParser()
         conf['paths'] = {'bol': os.getcwd()}
         conf['scripts'] = {'Jinx': 'https://raw.githubusercontent.com/RalphLeague/BoL/master/Jinx.lua'}
-        conf['common'] = {
-            'SxOrbWalk.lua': 'https://raw.githubusercontent.com/Superx321/BoL/master/common/SxOrbWalk.lua'}
+        conf['common'] = {'SxOrbWalk.lua': 'https://raw.githubusercontent.com/Superx321/BoL/master/common/SxOrbWalk.lua'}
         with open("config.ini", 'w') as config_file:
             conf.write(config_file)
         print("Config file created. Check config.ini and edit it if necessary.")
         input('Press enter to exit')
         exit()
     return config, scripts_path, common_path
+
+
+def gen_config():
+    scripts = {}
+    libs = {}
+    bol = os.getcwd()
+    bol_scripts = bol + '\\\\Scripts'
+    bol_libs = bol_scripts + '\\\\Common'
+    database=ConfigParser()
+    database.read("config.ini")
+    scripts_base = dict(database.items('scripts', raw=True))
+    libs_base = dict(database.items('common', raw=True))
+
+    for script in os.listdir(bol_scripts):
+        if os.path.isfile(bol_scripts + '\\' + script):
+            scripts[script.lower()] = ''
+
+    for lib in os.listdir(bol_libs):
+        if os.path.isfile(bol_libs + '\\' + lib):
+            libs[lib.lower()] = ''
+
+    for key in libs.keys():
+        for key1 in libs_base.keys():
+            if key == key1:
+                libs[key] = libs_base[key]
+
+    for key in scripts.keys():
+        for key1 in scripts_base.keys():
+            if key == key1:
+                scripts[key] = scripts_base[key]
+
+    config = ConfigParser()
+    config['paths'] = {'bol' : bol}
+    config['scripts'] = scripts
+    config['common'] = libs
+
+    with open("test.ini", "w") as test:
+        config.write(test)
 
 
 # Main logic of a job
@@ -70,7 +112,7 @@ class Updater(workerpool.Job):
 
 
 # I don't like it here.
-pool = workerpool.WorkerPool(size=5)
+pool = workerpool.WorkerPool(size=10)
 
 
 # Get script name and URL from config and put a job in the pool
@@ -89,5 +131,6 @@ update('common', common_path)
 clear_cache()
 pool.shutdown()
 pool.wait()
+print(os.listdir(scripts_path))
 print("All done!")
 input('Press enter to Exit')
