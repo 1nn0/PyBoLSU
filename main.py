@@ -80,7 +80,9 @@ def gen_config():
 
 # Main logic of a job
 class Updater(workerpool.Job):
+
     def __init__(self, script, url, path):
+        workerpool.Job.__init__(self)
         self.script = script
         self.path = path
         self.url = url
@@ -105,6 +107,7 @@ class Updater(workerpool.Job):
         else:
             print('Files differ! Copy newer file! ' + self.script)
             shutil.copyfile(tmp_name, self.path + self.script)
+
 
         # cleaning
         tmp.close()
@@ -131,6 +134,5 @@ update('common', common_path)
 clear_cache()
 pool.shutdown()
 pool.wait()
-print(os.listdir(scripts_path))
 print("All done!")
 input('Press enter to Exit')
